@@ -7,13 +7,14 @@ on:
     tags: ['v*.*.*']
   workflow_dispatch: # started by auto-tag.yml with the tag as the ref
 
-permissions:
-  contents: write   # create the release and upload its assets
+permissions: {}
 
 jobs:
   release:
     name: Build, verify and publish the plugin zip
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release and upload its assets
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
