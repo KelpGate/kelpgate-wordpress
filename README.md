@@ -43,8 +43,8 @@ flowchart LR
 
 **Requirements:** WordPress 5.8 or later, PHP 7.4 or later, and a Kelpgate account (client ID and client secret from the Kelpgate Console).
 
-1. Download `kelpgate-malware-scanner.zip` from the [latest release](https://github.com/KelpGate/kelpgate-wordpress/releases/latest). Use that file, not the "Source code" archives.
-2. In WordPress admin, go to **Plugins > Add New > Upload Plugin**, choose the zip, then **Install Now** and **Activate**.
+1. Install it from the [WordPress plugin directory](https://wordpress.org/plugins/kelpgate-malware-scanner/) (**Plugins > Add New**, search for Kelpgate Malware Scanner), or download `kelpgate-malware-scanner.zip` from the [latest release](https://github.com/KelpGate/kelpgate-wordpress/releases/latest). Use that file, not the "Source code" archives.
+2. If you downloaded the zip, go to **Plugins > Add New > Upload Plugin**, choose it, then select **Install Now**. Either way, finish with **Activate**.
 3. Open **Settings > Kelpgate Malware Scanner**, enter the API URL, token URL, client ID and client secret, and select **Test connection**.
 
 Each release includes a `.sha256` file so you can verify the download.
