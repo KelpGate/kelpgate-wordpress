@@ -5,14 +5,16 @@ name: Release
 on:
   push:
     tags: ['v*.*.*']
+  workflow_dispatch: # started by auto-tag.yml with the tag as the ref
 
-permissions:
-  contents: write   # create the release and upload its assets
+permissions: {}
 
 jobs:
   release:
     name: Build, verify and publish the plugin zip
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release and upload its assets
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -41,3 +43,50 @@ jobs:
           gh release create "$GITHUB_REF_NAME" "$zip" "$zip.sha256" dist/kelpgate-malware-scanner.zip \
             --title "Kelpgate WordPress Plugin $GITHUB_REF_NAME" \
             --notes "Install: download \`$(basename "$zip")\` from the assets below and upload it in WordPress admin (Plugins > Add New > Upload Plugin). Tested on WordPress 5.8 to 6.9 with PHP 7.4 to 8.4 (see the README for the exact combinations). Do not use the 'Source code' archives. SHA-256 is in the attached \`.sha256\` file."
+
+  wordpress-org:
+    name: Publish to the WordPress.org plugin directory
+    needs: release
+    runs-on: ubuntu-latest
+    # Uses the "wordpress-org" environment, so the SVN credentials can be limited to this job and protected
+    # with required reviewers if you want a manual approval before every directory release.
+    environment: wordpress-org
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: The readme.txt Stable tag must match the tag
+        run: |
+          set -euo pipefail
+          stable="$(sed -n 's/^Stable tag: *//p' readme.txt | head -1 | tr -d '[:space:]')"
+          test "v$stable" = "$GITHUB_REF_NAME" || { echo "::error::readme.txt Stable tag ($stable) does not match $GITHUB_REF_NAME"; exit 1; }
+
+      - name: Build the plugin files
+        run: ./package.sh dist
+
+      - name: Commit trunk, the version tag and the assets to WordPress.org SVN
+        env:
+          SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${SVN_USERNAME:?add the WPORG_SVN_USERNAME secret to the wordpress-org environment}"
+          : "${SVN_PASSWORD:?add the WPORG_SVN_PASSWORD secret to the wordpress-org environment}"
+          version="${GITHUB_REF_NAME#v}"
+          sudo apt-get install -y -qq subversion rsync unzip >/dev/null
+          svn_url="https://plugins.svn.wordpress.org/kelpgate-malware-scanner"
+          svn co -q "$svn_url" svn
+          if [ -d "svn/tags/$version" ]; then echo "::notice::tags/$version already exists on WordPress.org; nothing to publish."; exit 0; fi
+          unzip -q dist/kelpgate-malware-scanner-*.zip -d build
+          rsync -a --delete --exclude '.svn' build/kelpgate-malware-scanner/ svn/trunk/
+          mkdir -p svn/assets
+          for f in banner-772x250 banner-1544x500 icon-128x128 icon-256x256; do
+            [ -f ".wordpress-org/$f.png" ] && cp ".wordpress-org/$f.png" svn/assets/
+          done
+          cd svn
+          svn add --force . -q
+          svn status | sed -n 's/^!\s*//p' | xargs -r svn rm -q
+          svn cp trunk "tags/$version" -q
+          svn commit --non-interactive --no-auth-cache --username "$SVN_USERNAME" --password "$SVN_PASSWORD" \
+            -m "Release $version"
