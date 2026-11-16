@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1544" height="500" viewBox="0 0 1544 500">
+  <defs>
+    <linearGradient id="bannerBgLight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafb"/>
+      <stop offset="100%" stop-color="#e6eff2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1544" height="500" fill="url(#bannerBgLight)"/>
+  <g id="kelp-layer"><path d="M 980.6 505.0 C 975.6 475.9,   974.0 446.9,   970.7 422.0 C 984.0 451.0,   990.6 480.1,   993.9 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1126.8 505.0 C 1119.3 448.6,   1117.3 392.2,   1112.3 343.8 C 1132.6 400.2,   1142.5 456.6,   1147.5 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 645.1 505.0 C 645.2 486.0,   651.7 467.0,   651.8 450.7 C 658.0 469.7,   657.8 488.7,   657.8 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 32.1 505.0 C 32.9 481.4,   43.1 457.7,   43.7 437.5 C 51.5 461.1,   50.4 484.7,   49.9 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 330.5 505.0 C 321.6 470.7,   316.7 436.4,   310.8 407.0 C 332.5 441.3,   344.3 475.6,   350.2 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1237.1 505.0 C 1230.9 447.7,   1227.6 390.4,   1223.5 341.2 C 1238.8 398.5,   1247.1 455.9,   1251.2 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1472.4 505.0 C 1465.1 462.9,   1458.6 420.7,   1453.7 384.6 C 1469.0 426.7,   1478.7 468.9,   1483.5 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1298.7 505.0 C 1302.8 451.6,   1319.6 398.3,   1322.3 352.6 C 1326.6 405.9,   1321.1 459.3,   1318.4 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 820.7 505.0 C 821.6 460.2,   830.4 415.5,   831.1 377.1 C 837.1 421.9,   835.8 466.6,   835.2 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1270.4 505.0 C 1271.8 451.0,   1284.3 397.0,   1285.2 350.8 C 1293.6 404.8,   1291.7 458.7,   1290.8 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1081.5 505.0 C 1077.7 475.1,   1077.7 445.2,   1075.2 419.5 C 1086.6 449.4,   1091.7 479.4,   1094.2 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 117.6 505.0 C 113.6 480.4,   112.5 455.9,   109.9 434.8 C 120.8 459.4,   126.1 484.0,   128.8 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 974.3 505.0 C 969.0 461.7,   967.6 418.4,   964.1 381.2 C 978.3 424.5,   985.2 467.9,   988.7 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 403.3 505.0 C 405.3 461.2,   417.5 417.5,   418.8 379.9 C 425.0 423.7,   422.4 467.5,   421.1 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 258.3 505.0 C 256.1 466.9,   258.5 428.8,   257.0 396.1 C 265.9 434.2,   268.8 472.3,   270.2 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1519.5 505.0 C 1522.8 450.1,   1536.7 395.2,   1538.9 348.2 C 1542.8 403.1,   1538.4 458.0,   1536.2 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1295.0 505.0 C 1286.6 444.4,   1278.9 383.8,   1273.3 331.9 C 1290.9 392.5,   1302.1 453.1,   1307.7 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 480.8 505.0 C 488.8 479.5,   508.3 454.0,   513.6 432.1 C 509.3 457.6,   498.6 483.1,   493.3 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1344.2 505.0 C 1342.3 463.8,   1348.1 422.6,   1346.8 387.2 C 1358.3 428.5,   1360.8 469.7,   1362.0 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1405.5 505.0 C 1400.9 457.7,   1399.9 410.5,   1396.9 369.9 C 1409.5 417.2,   1415.6 464.5,   1418.7 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 858.2 505.0 C 865.4 466.0,   885.8 426.9,   890.6 393.5 C 889.6 432.5,   880.0 471.5,   875.3 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 605.7 505.0 C 605.9 480.8,   617.1 456.6,   617.2 435.9 C 628.0 460.1,   627.8 484.3,   627.7 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 134.7 505.0 C 137.0 485.5,   146.5 466.0,   148.0 449.3 C 150.6 468.8,   147.6 488.3,   146.0 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1217.6 505.0 C 1215.5 459.3,   1217.3 413.5,   1215.9 374.3 C 1224.1 420.1,   1226.9 465.8,   1228.4 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 1527.2 505.0 C 1533.7 454.8,   1555.3 404.6,   1559.7 361.5 C 1561.8 411.7,   1553.2 462.0,   1548.8 505.0 Z" fill="#b4d5dc" opacity="0.45"/>
+  <path d="M 8.6 505.0 C 9.3 467.1,   19.5 429.2,   19.9 396.8 C 28.1 434.7,   27.3 472.5,   26.8 505.0 Z" fill="#b4d5dc" opacity="0.45"/></g>
+  <g id="content" transform="translate(110, 0)">
+    <g transform="translate(0, 72)">
+      <rect width="44" height="44" rx="10" ry="10" fill="#d6eef2" stroke="#0b6b7a" stroke-opacity="0.4" stroke-width="1.5"/>
+      <g transform="translate(10, 9)">
+        <path d="M12 19s6-3 6-7.5V6.8l-6-2.3-6 2.3v4.7C6 16 12 19 12 19z" fill="none" stroke="#0a2a32" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <text x="60" y="30" font-family="'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif" font-size="24" font-weight="600" fill="#0f1719">Kelpgate Malware Scanner</text>
+    </g>
+    <text x="0" y="202" font-family="'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif" font-size="64" font-weight="700" fill="#0f1719" letter-spacing="-0.5px">Scan every upload</text>
+    <text x="0" y="278" font-family="'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif" font-size="64" font-weight="700" fill="#0b6b7a" letter-spacing="-0.5px">before it reaches you.</text>
+    <text x="0" y="342" font-family="'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif" font-size="24" font-weight="400" fill="#4d5f62">Infected files are blocked before they are saved to WordPress.</text>
+  </g>
+</svg>
