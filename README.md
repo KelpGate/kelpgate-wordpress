@@ -1,157 +1,169 @@
 # Kelpgate Malware Scanner for WordPress
 
-**Stop infected uploads before they reach your site.**
+[![WordPress plugin](https://img.shields.io/wordpress/plugin/v/kelpgate-malware-scanner)](https://wordpress.org/plugins/kelpgate-malware-scanner/)
+[![Release](https://img.shields.io/github/v/release/KelpGate/kelpgate-wordpress)](https://github.com/KelpGate/kelpgate-wordpress/releases)
+[![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 
-Kelpgate Malware Scanner checks every file uploaded to WordPress against the Kelpgate scanning service and blocks infected files before they are saved. It covers the Media Library, form plugins and custom upload handlers, and gives administrators a clear record of what was blocked.
+WordPress plugin that scans uploaded files with the [Kelpgate](https://kelpgate.cloud) malware-scanning API and rejects infected files before WordPress saves them. It covers the WordPress upload pipeline (Media Library and the REST API) and raw multipart uploads handled by form plugins and custom endpoints, and records blocked uploads in an incident log.
 
-> This plugin is open source under GPL-2.0-or-later. It is a client for the Kelpgate scanning service, a hosted commercial product that is not part of this repository. You need a Kelpgate account to use it.
+The plugin is open source under GPL-2.0-or-later. The Kelpgate scanning service is a commercial hosted product; using it requires a Kelpgate account. No data is sent until the plugin is configured.
 
 ## Contents
 
-[Why Kelpgate](#why-kelpgate) · [How it works](#how-it-works) · [Install](#install) · [Configuration](#configuration) · [Failure policy](#failure-policy) · [Security and privacy](#security-and-privacy) · [Compatibility](#compatibility) · [Verify your setup](#verify-your-setup) · [Troubleshooting](#troubleshooting) · [Release process](#release-process) · [Support and versioning](#support-and-versioning) · [Contributing and security](#contributing-and-security) · [License](#license)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Operation](#operation)
+- [Failure policy](#failure-policy)
+- [Security and privacy](#security-and-privacy)
+- [Hooks](#hooks)
+- [Verification](#verification)
+- [Troubleshooting](#troubleshooting)
+- [Compatibility](#compatibility)
+- [Release process](#release-process)
+- [Versioning and support](#versioning-and-support)
+- [Licence](#licence)
 
-## Why Kelpgate
+## Requirements
 
-| | |
-| --- | --- |
-| **Blocks at the door** | Uploads are scanned during the upload itself. An infected file is rejected and never lands in `wp-content/uploads`. |
-| **Broad coverage** | Hooks WordPress's own upload pipeline and also inspects raw `$_FILES` uploads sent to other endpoints, such as form plugins and custom handlers. |
-| **Predictable failure behavior** | You choose what happens when the scanner is unreachable or a file is too large: reject (fail-closed) or accept (fail-open). |
-| **Credentials stay out of the database** | Set the API URL and client credentials as constants in `wp-config.php`. Saved secrets are never echoed back into the settings page. |
-| **Accurate client IPs** | Incident records store the visitor's address, honouring `X-Forwarded-For` only from proxies you trust. |
-| **Clean removal** | Deleting the plugin removes its settings, incident log and cached tokens. |
+| Component | Version |
+|---|---|
+| WordPress | 5.8 or later |
+| PHP | 7.4 or later |
+| Kelpgate | API client (client ID and secret) from the [Kelpgate Console](https://console.kelpgate.cloud) |
 
-## How it works
+## Installation
+
+1. Install from the [WordPress plugin directory](https://wordpress.org/plugins/kelpgate-malware-scanner/) (**Plugins > Add New**, search for *Kelpgate Malware Scanner*), or download `kelpgate-malware-scanner.zip` from the [latest release](https://github.com/KelpGate/kelpgate-wordpress/releases/latest) and upload it under **Plugins > Add New > Upload Plugin**. Do not use the *Source code* archives.
+2. Activate the plugin.
+3. Open **Settings > Kelpgate Malware Scanner**, enter the connection settings and select **Test connection**.
+
+Each release includes a `.sha256` file for verifying the download.
+
+## Configuration
+
+Settings are stored through the settings page or defined as constants in `wp-config.php`. A constant overrides the stored value and keeps the value out of the database; this is the recommended method for credentials.
+
+```php
+define('KELPGATE_API_URL',       'https://api.kelpgate.cloud');
+define('KELPGATE_TOKEN_URL',     'https://auth.kelpgate.cloud/oauth2/token');
+define('KELPGATE_CLIENT_ID',     'your-client-id');
+define('KELPGATE_CLIENT_SECRET', 'your-client-secret');
+```
+
+| Setting | Constant | Default | Description |
+|---|---|---|---|
+| API URL | `KELPGATE_API_URL` | | Kelpgate API base URL; HTTPS required except for `localhost` |
+| Token URL | `KELPGATE_TOKEN_URL` | | OAuth 2.0 token endpoint; HTTPS required except for `localhost` |
+| Client ID, client secret | `KELPGATE_CLIENT_ID`, `KELPGATE_CLIENT_SECRET` | | Client credentials. A blank secret field on the settings page keeps the stored secret. |
+| Authentication mode | `KELPGATE_AUTH_MODE` | `oauth2` | `oauth2` (client credentials) or `token` (static token) |
+| Static token | `KELPGATE_TOKEN` | | Used when the authentication mode is `token` |
+| Failure policy | `KELPGATE_FAIL_ACTION` | `block` | `block` or `allow`; see [Failure policy](#failure-policy) |
+| Maximum file size | `KELPGATE_MAX_MB` | `50` | 1 to 500 MB |
+| Scan timeout | `KELPGATE_TIMEOUT_SECONDS` | `45` | 5 to 300 seconds |
+| Trusted proxies | `KELPGATE_TRUSTED_PROXIES` | Loopback and private ranges | Comma-separated addresses or CIDR ranges whose `X-Forwarded-For` header is trusted |
+
+The plugin scans uploads only when the connection settings for the selected authentication mode are complete: API URL, token URL, client ID and secret for `oauth2`; API URL and token for `token`.
+
+## Operation
 
 ```mermaid
 flowchart LR
     U[Upload] --> W[WordPress]
     W --> P[Kelpgate plugin]
-    P -->|file + bearer token| S[Kelpgate scanning API]
+    P -->|file and access token| S[Kelpgate API]
     S -->|CLEAN| A[Upload saved]
-    S -->|INFECTED, HTTP 406| B[Upload rejected and logged]
-    S -.->|unreachable or oversized| F{Failure policy}
+    S -->|INFECTED| B[Upload rejected and logged]
+    S -.->|no verdict| F{Failure policy}
     F -->|block| B
     F -->|allow| A
 ```
 
-1. The plugin obtains an OAuth 2.0 access token with your client credentials. Tokens are cached and renewed shortly before they expire.
+1. The plugin obtains an OAuth 2.0 access token with the configured credentials, caches it and renews it before expiry. A rejected token is discarded and the request retried once.
 2. The file is sent to the scanning API over HTTPS.
-3. Only a verdict of infected (HTTP 406) blocks a file. The rejection and its details are recorded in the incident log (the last 50 incidents are kept).
+3. Only an infected verdict blocks a file. Blocked uploads are recorded in the incident log, which retains the 50 most recent entries and is shown on the settings page.
 
-## Install
-
-**Requirements:** WordPress 5.8 or later, PHP 7.4 or later, and a Kelpgate account (client ID and client secret from the Kelpgate Console).
-
-1. Install it from the [WordPress plugin directory](https://wordpress.org/plugins/kelpgate-malware-scanner/) (**Plugins > Add New**, search for Kelpgate Malware Scanner), or download `kelpgate-malware-scanner.zip` from the [latest release](https://github.com/KelpGate/kelpgate-wordpress/releases/latest). Use that file, not the "Source code" archives.
-2. If you downloaded the zip, go to **Plugins > Add New > Upload Plugin**, choose it, then select **Install Now**. Either way, finish with **Activate**.
-3. Open **Settings > Kelpgate Malware Scanner**, enter the API URL, token URL, client ID and client secret, and select **Test connection**.
-
-Each release includes a `.sha256` file so you can verify the download.
-
-## Configuration
-
-Settings can be saved in the admin page or defined as constants in `wp-config.php`. A constant takes precedence over the saved value and keeps the credential out of the database.
-
-```php
-define('KELPGATE_API_URL',       'https://api.example.com');
-define('KELPGATE_TOKEN_URL',     'https://auth.example.com/oauth2/token');
-define('KELPGATE_CLIENT_ID',     'your-client-id');
-define('KELPGATE_CLIENT_SECRET', 'your-client-secret');
-// Optional: KELPGATE_TOKEN (static token), KELPGATE_AUTH_MODE ('oauth2' or 'token'),
-// KELPGATE_FAIL_ACTION ('block' or 'allow'), KELPGATE_MAX_MB, KELPGATE_TIMEOUT_SECONDS
-
-// Behind a load balancer or CDN: comma-separated IPs/CIDRs whose X-Forwarded-For header is trusted.
-define('KELPGATE_TRUSTED_PROXIES', '10.0.0.0/8');
-```
-
-| Setting | Where | Default | Notes |
-| --- | --- | --- | --- |
-| API URL, token URL | Admin page or constant | none | Must be HTTPS (plain HTTP is accepted only for `localhost`). |
-| Client ID, client secret | Admin page or constant | none | Leave the secret field blank to keep the saved one. |
-| Failure policy | Admin page or `KELPGATE_FAIL_ACTION` | block | See below. |
-| Maximum file size | Admin page or `KELPGATE_MAX_MB` | 50 MB | 1 to 500 MB. |
-| Scan timeout | Admin page or `KELPGATE_TIMEOUT_SECONDS` | 45 seconds | 5 to 300 seconds. |
-| Trusted proxies | `KELPGATE_TRUSTED_PROXIES` or the `kelpgate_trusted_proxies` filter | loopback and private ranges | Controls which proxies may supply `X-Forwarded-For`. |
+Files are read into memory for transmission; keep PHP `memory_limit` at least twice the maximum file size.
 
 ## Failure policy
 
-| Situation | Fail-closed (`block`, default) | Fail-open (`allow`) |
-| --- | --- | --- |
-| Scanner unreachable or returns an error | Upload rejected | Upload accepted |
-| Authentication fails | Upload rejected | Upload accepted |
-| File larger than the maximum size | Upload rejected | Upload accepted |
-| Not enough PHP memory to buffer the file | Upload rejected | Upload accepted |
-| Plugin not configured yet | Upload accepted | Upload accepted |
+| Condition | `block` (default) | `allow` |
+|---|---|---|
+| Scanner unreachable or returns an error | Rejected | Accepted |
+| Authentication failure | Rejected | Accepted |
+| File larger than the maximum size | Rejected | Accepted |
+| Insufficient PHP memory to buffer the file | Rejected | Accepted |
+| Plugin not configured | Accepted | Accepted |
 
-Choose fail-closed where blocking malware matters more than availability, and fail-open where uploads must keep working during an outage. Each file is read into memory for transmission, so keep PHP's `memory_limit` comfortably above your largest allowed upload.
+Use `block` where preventing malware takes priority over availability, and `allow` where uploads must continue during a service outage.
 
 ## Security and privacy
 
-- **What leaves your server:** the uploaded file and its name are sent to the API URL you configure, over HTTPS. Nothing else about your site is sent.
-- **Transport:** API and token endpoints must use HTTPS.
-- **Access control:** the settings page and connection test require an administrator and a valid nonce.
-- **Secrets:** saved secrets are never written into the page HTML. Use constants to keep them out of the database entirely.
-- **Rate limiting:** raw upload inspection is limited to 20 files per minute per client address.
-- **Token handling:** access tokens are cached and refreshed ahead of expiry. A rejected token is discarded and retried once.
-- **Data retained:** an incident record (time, file name, signature, SHA-256, client IP, user ID) for the last 50 blocked uploads. It is removed on uninstall.
+| Aspect | Behaviour |
+|---|---|
+| Data sent | The file content and name, over HTTPS, to the configured API URL only |
+| Access control | Settings page and connection test require the `manage_options` capability and a valid nonce |
+| Secrets | Stored secrets are never written to page output; constants keep them out of the database |
+| Rate limiting | Raw upload inspection is limited to 20 files per minute per client address |
+| Data retained | Incident records for the 50 most recent blocked uploads: time, file name, detection, SHA-256, client address, user ID |
+| Uninstall | Removes settings, incident log and cached tokens |
+| Service retention | Clean files are retained briefly and infected files quarantined by the Kelpgate service, according to the plan |
 
-To report a vulnerability, please use this repository's private security advisory (Security, then Report a vulnerability) or email security@kelpgate.cloud.
+Report vulnerabilities privately through the repository's security advisories (**Security > Report a vulnerability**) or according to the [security policy](https://github.com/KelpGate/.github/blob/main/SECURITY.md).
 
-## Compatibility
+## Hooks
 
-Every combination below was installed on a real WordPress and checked: a clean upload is accepted, an EICAR test upload is rejected, and both failure policies behave as set. The scanning API was simulated for these runs.
+| Filter | Default | Description |
+|---|---|---|
+| `kelpgate_trusted_proxies` | Value of `KELPGATE_TRUSTED_PROXIES` | Proxies whose `X-Forwarded-For` header is trusted |
+| `kelpgate_raw_scan_limit_per_minute` | `20` | Raw upload inspections allowed per client address per minute |
 
-| WordPress | PHP |
-| --- | --- |
-| 5.8 | 7.4, 8.0 |
-| 6.1 | 7.4 |
-| 6.4 | 8.0, 8.1, 8.2 |
-| 6.9 | 8.1, 8.2, 8.3, 8.4 |
-| 7.1 | 8.3 |
+## Verification
 
-WordPress 7.1 (7.1.4) was checked for accepting a clean upload and rejecting an infected one, through both multipart and raw-body REST uploads, and the packaged plugin passes the official Plugin Check with no findings. The failure policies were not re-run on 7.1.
-
-All source files also lint cleanly on PHP 7.4 through 8.4. Combinations not listed have not been tested.
-
-## Verify your setup
-
-Save the standard EICAR test string as `eicar.txt` and upload it through **Media > Add New**:
+Save the EICAR test string as `eicar.txt` and upload it through **Media > Add New**:
 
 ```
 X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*
 ```
 
-The upload is refused and an entry appears in the incident list on the settings page.
+The upload is rejected and an entry appears in the incident log.
 
 ## Troubleshooting
 
-| Symptom | Likely cause |
-| --- | --- |
-| Every upload is rejected | The scanner is unreachable or credentials are wrong while the failure policy is `block`. Use **Test connection**. |
-| Nothing is ever blocked | The plugin is not configured (all four connection values are required), or the policy is fail-open during an outage. |
-| "Installed more than once" notice | Two copies are present. Deactivate and delete the duplicate under Plugins. |
-| Incident log shows a proxy address | Add your load balancer or CDN network to `KELPGATE_TRUSTED_PROXIES`. |
-| Large files rejected | Raise the maximum file size and ensure PHP `memory_limit` is at least about twice the file size. |
+| Symptom | Cause |
+|---|---|
+| Every upload is rejected | The scanner is unreachable or the credentials are invalid while the policy is `block`. Use **Test connection**. |
+| No upload is ever blocked | The plugin is not fully configured, or the policy is `allow` during an outage. |
+| "Installed more than once" notice | Two copies of the plugin are present. Deactivate and delete the duplicate. |
+| Incident log shows a proxy address | Add the load balancer or CDN network to `KELPGATE_TRUSTED_PROXIES`. |
+| Large files are rejected | Increase the maximum file size and PHP `memory_limit`. |
 
-For extra detail, enable `WP_DEBUG` and `WP_DEBUG_LOG`; blocked uploads are then written to `wp-content/debug.log`.
+With `WP_DEBUG` and `WP_DEBUG_LOG` enabled, blocked uploads are also written to `wp-content/debug.log`.
+
+## Compatibility
+
+Each combination below was installed on WordPress and verified with a clean upload (accepted), an EICAR upload (rejected) and both failure policies, against a simulated scanning API.
+
+| WordPress | PHP |
+|---|---|
+| 5.8 | 7.4, 8.0 |
+| 6.1 | 7.4 |
+| 6.4 | 8.0, 8.1, 8.2 |
+| 6.9 | 8.1, 8.2, 8.3, 8.4 |
+| 7.1 | 8.3 (clean and infected uploads through multipart and raw-body REST requests; failure policies not re-verified) |
+
+All source files lint on PHP 7.4 through 8.4, and the packaged plugin passes the WordPress Plugin Check with no findings. Combinations not listed have not been tested.
 
 ## Release process
 
-`./package.sh` builds `kelpgate-malware-scanner.zip` with a single top-level `kelpgate-malware-scanner/` folder, verifies the layout and writes a SHA-256 file. Pushing a `vX.Y.Z` tag that matches the plugin version runs the release workflow, which lints on PHP 7.4, builds the zip and publishes the release.
+`./package.sh` builds `kelpgate-malware-scanner.zip` with a single top-level `kelpgate-malware-scanner/` directory, verifies the layout and writes a SHA-256 file. Pushing a `vX.Y.Z` tag that matches the plugin version runs the release workflow, which lints on PHP 7.4, builds the archive and publishes the GitHub release. WordPress.org releases are published separately through the plugin's SVN repository.
 
-## Support and versioning
+## Versioning and support
 
-This project follows [Semantic Versioning](https://semver.org): breaking changes only in major versions, new features in minor versions, fixes in patch versions. Releases are tagged on GitHub, and user-visible changes are listed in the [changelog](CHANGELOG.md).
+The plugin follows [Semantic Versioning](https://semver.org) and uses version 1 of the Kelpgate API (`/api/v1`). Fixes, including security fixes, are released for the latest version only. Changes are listed in the [changelog](CHANGELOG.md).
 
-Fixes, including security fixes, go into the latest release only, so upgrade to receive them. The tested runtime versions are listed under Compatibility. The plugin talks to version 1 of the Kelpgate API (`/api/v1`).
+See [getting help](https://github.com/KelpGate/.github/blob/main/SUPPORT.md) or contact support@kelpgate.cloud. Contributions follow the [contributing guide](https://github.com/KelpGate/.github/blob/main/CONTRIBUTING.md).
 
-For help, see [getting help](https://github.com/KelpGate/.github/blob/main/SUPPORT.md) or email support@kelpgate.cloud.
+## Licence
 
-## Contributing and security
-
-Bug reports and pull requests are welcome; see the [contributing guide](https://github.com/KelpGate/.github/blob/main/CONTRIBUTING.md). To report a vulnerability, follow the [security policy](https://github.com/KelpGate/.github/blob/main/SECURITY.md) and report it privately. For help, see [getting help](https://github.com/KelpGate/.github/blob/main/SUPPORT.md).
-
-## License
-
-GPL-2.0-or-later. See [LICENSE](LICENSE).
+GPL-2.0-or-later. See [LICENSE](LICENSE). The Kelpgate scanning service is subject to its own terms.
