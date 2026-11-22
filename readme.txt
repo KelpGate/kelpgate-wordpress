@@ -8,20 +8,20 @@ Stable tag: 1.0.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Scan every upload for malware before it reaches your site. Infected files are blocked before they are saved.
+Scans uploaded files for malware with the Kelpgate service and rejects infected files before WordPress saves them.
 
 == Description ==
 
 Kelpgate Malware Scanner checks every file uploaded to WordPress against the Kelpgate scanning service and blocks infected files before they are saved. It covers the Media Library, form plugins and custom upload handlers, and keeps a record of what was blocked.
 
-**Why use it**
+**Features**
 
-* **Blocks at the door.** Files are scanned during the upload. An infected file is rejected and never lands in `wp-content/uploads`.
-* **Broad coverage.** Hooks WordPress's own upload pipeline and also inspects raw file uploads sent to other endpoints, such as form plugins and custom handlers.
-* **You choose the failure behavior.** If the scanner cannot be reached or a file is too large, either reject the upload (safest) or accept it.
-* **Credentials stay out of the database.** Define the API address and credentials as constants in `wp-config.php`. Saved secrets are never shown again on the settings page.
-* **Accurate client addresses.** Incident records store the visitor's IP address, trusting `X-Forwarded-For` only from proxies you list.
-* **Clean removal.** Deleting the plugin removes its settings, incident log and cached tokens.
+* **Scanning during upload.** Files are scanned before WordPress saves them; an infected file is rejected and never written to `wp-content/uploads`.
+* **Upload coverage.** Hooks the WordPress upload pipeline and inspects raw file uploads sent to other endpoints, such as form plugins and custom handlers.
+* **Configurable failure policy.** When no verdict is available (scanner unreachable, file over the size limit), uploads are either rejected (default) or accepted.
+* **Credentials outside the database.** API endpoints and credentials can be defined as constants in `wp-config.php`. Saved secrets are never displayed on the settings page.
+* **Client address handling.** Incident records store the visitor's address and trust `X-Forwarded-For` only from listed proxies.
+* **Complete uninstall.** Deleting the plugin removes its settings, incident log and cached tokens.
 
 **This plugin needs a Kelpgate account.** The plugin is open source (GPL-2.0-or-later). It is a client for the Kelpgate scanning service, a hosted commercial product that is not part of this plugin. Nothing is sent until you connect an account.
 
